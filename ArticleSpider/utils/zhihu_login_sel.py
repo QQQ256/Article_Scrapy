@@ -233,7 +233,7 @@ class Login(object):
         self.browser.get(self.url)
 
         login_element = self.browser.find_element(By.XPATH,
-            '//*[@id="root"]/div/main/div/div/div/div/div[2]/div/div[1]/div/div[1]/form/div[1]/div[2]')
+                                                  '//*[@id="root"]/div/main/div/div/div/div/div[2]/div/div[1]/div/div[1]/form/div[1]/div[2]')
 
         self.browser.execute_script("arguments[0].click();", login_element)
         time.sleep(5)
@@ -285,7 +285,7 @@ class Login(object):
 
             # 滑块对象
             element = self.browser.find_element(By.CSS_SELECTOR,
-                '.yidun_slider')
+                                                '.yidun_slider')
             # 滑动函数
             self.sli.slide_verification(self.browser, element, distance)
 
@@ -324,6 +324,7 @@ class Login(object):
         '''
         cookies = self.browser.get_cookies()
         self.cookies = ''
+        # cookie 要转换成字典的形式才可以用
         for cookie in cookies:
             self.cookies += '{}={};'.format(cookie.get('name'), cookie.get('value'))
         return cookies
@@ -336,5 +337,5 @@ class Login(object):
 
 if __name__ == "__main__":
     # opencv识别验证码可能失败，机器学习识别概率高 6表示重试次数
-    l = Login("asd123", "qqq886", 6)
+    l = Login("18961275110", "86355573_aA", 6)
     l.login()
