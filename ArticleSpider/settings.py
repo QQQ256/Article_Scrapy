@@ -101,3 +101,7 @@ MYSQL_HOST = "127.0.0.1"
 MYSQL_DBNAME = "article_spider"
 MYSQL_USER = "root"
 MYSQL_PASSWORD = "123123"
+
+# Zhihu User and password configuration
+USER = "18961275110"
+PASSWORD = "86355573_aA"

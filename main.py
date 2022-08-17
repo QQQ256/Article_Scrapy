@@ -10,4 +10,5 @@ if __name__ == '__main__':
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
     # crawl means start a spider
-    execute(["scrapy", "crawl", "jobbole"])
+    # execute(["scrapy", "crawl", "jobbole"])
+    execute(["scrapy", "crawl", "zhihu"])
