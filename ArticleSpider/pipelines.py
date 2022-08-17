@@ -13,7 +13,6 @@ from scrapy.pipelines.images import ImagesPipeline
 from scrapy.exporters import JsonItemExporter
 from twisted.enterprise import adbapi
 
-
 class ArticlespiderPipeline:
     def process_item(self, item, spider):
         return item
@@ -52,38 +51,6 @@ class JsonExporterPipeline(object):
     def spider_closed(self, spider):
         self.exporter.finish_exporting()
         self.file.close()
-
-
-# 数据库连接
-class MysqlPipeline(object):
-    def __init__(self):
-        self.conn = pymysql.connect("127.0.0.1", "root", "123123", "article_spider", charset="utf8", use_unicode=True)
-        self.cursor = self.conn.cursor()
-
-    # 配置进settings
-    def process_item(self, item, spider):
-        insert_sql = """
-            insert into jobbole_article(title, url, url_object_id, front_image_path, front_image_url, praise_nums, comment_nums, fav_nums, tags,
-            content, create_date)
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        params = list()
-        params.append(item.get("title", ""))
-        params.append(item.get("url", ""))
-        params.append(item.get("url_object_id", ""))
-        front_image_list = ",".join(params.append(item.get("front_image_url", [])))
-        params.append(front_image_list)
-        params.append(item.get("front_image_path", ""))
-        params.append(item.get("praise_nums", 0))
-        params.append(item.get("comment_nums", 0))
-        params.append(item.get("fav_nums", 0))
-        params.append(item.get("tags", ""))
-        params.append(item.get("content", ""))
-        params.append(item.get("create_date", "1970-07-01"))
-
-        self.cursor.execute(insert_sql, tuple(params))
-        self.conn.commit()
-        return item
 
 
 class MysqlTwistedPipeline(object):
