@@ -51,7 +51,7 @@ class JobboleSpider(scrapy.Spider):
         2. 获取下一页的url并交给scrapy进行下载；下载完成后交给parse继续跟进
         """
 
-        post_nodes = response.css('#news_list .news_block')[:1]
+        post_nodes = response.css('#news_list .news_block')
         for post_node in post_nodes:
             image_url = post_node.css('.entry_summary a img::attr(src)').extract_first("")
             if image_url.startswith("//"):
@@ -60,7 +60,7 @@ class JobboleSpider(scrapy.Spider):
 
             yield scrapy.Request(url=parse.urljoin(response.url, post_url), meta={"front_image_url": image_url},
                                  callback=self.parse_detail)
-            break
+            # break
 
         # # 提取下一页并交给scrapy下载
         # # 先拿切换页面的div中最后的那个值，判断是不是next，会出现到最后页next消失的情况，需要做特判
@@ -81,34 +81,6 @@ class JobboleSpider(scrapy.Spider):
         # 完善逻辑缜密性，必须是有匹配到最后面的id，才去爬html中的内容
         if match_re:
             post_id = match_re.group(1)
-            # 使用自定义的item
-            # article_item = JobBoleArticleItem()
-            #
-            #
-            #
-            # title = response.css("#news_title a::text").extract_first("")
-            #
-            # created_date = response.css("#news_info span.time::text").extract_first("")
-            # match_re = re.match(".*?(\d+.*)", created_date)
-            # if (match_re):
-            #     created_date = match_re.group(1)
-            #
-            # content = response.css("#news_content").extract()[0]
-            #
-            # tag_list = response.css(".news_tag a::text").extract()
-            #
-            # tags = ",".join(tag_list)
-
-            # article_item["title"] = title
-            # article_item["created_date"] = created_date
-            # article_item["content"] = content
-            # article_item["tags"] = tags
-            # article_item["url"] = response.url
-            # # front_image_url需要从parse方法中的request中获取，直接可以用response.meta进行获取
-            # if response.meta.get("front_image_url", ""):
-            #     article_item["front_image_url"] = [response.meta.get("front_image_url", "")]  # 这么写get会避免空值的exception
-            # else:
-            #     article_item["front_image_url"] = []
 
             item_loader = ArticleItemLoader(item=JobBoleArticleItem(), response=response)
             # 解释：title是通过哪个css提取出来的？
@@ -117,9 +89,10 @@ class JobboleSpider(scrapy.Spider):
             item_loader.add_css("tags", ".news_tag a::text")
             item_loader.add_css("created_date", "#news_info span.time::text")
             item_loader.add_value("url", response.url)
-            item_loader.add_value("front_image_url", response.meta.get("front_image_url", ""))
+            if response.meta.get("front_image_url", []):
+                item_loader.add_value("front_image_url", response.meta.get("front_image_url", []))
 
-            article_item = item_loader.load_item()
+            # article_item = item_loader.load_item()
 
             url = parse.urljoin(response.url, "/NewsAjax/GetAjaxNewsInfo?contentId={}".format(post_id))
             yield scrapy.Request(
@@ -127,27 +100,12 @@ class JobboleSpider(scrapy.Spider):
                 meta={"article_item": item_loader, "url": response.url},
                 callback=self.parse_nums)
 
-        pass
-
     @staticmethod
     def parse_nums(response):
         # 两层回调
         j_data = json.loads(response.text)
 
         item_loader = response.meta.get("article_item", "")
-
-        # praise_nums = j_data["DiggCount"]
-        # view_nums = j_data["TotalView"]
-        # comment_nums = j_data["CommentCount"]
-
-        # article_item["praise_nums"] = praise_nums
-        # article_item["view_nums"] = view_nums
-        # article_item["comment_nums"] = comment_nums
-        # # 将url转换成md5进行存储，节约空间；这里的md5转法写在util的common中定义方法
-        # article_item["url_object_id"] = common.get_md5(response.url)
-        #
-        # yield article_item
-
         item_loader.add_value("praise_nums", j_data["DiggCount"])
         item_loader.add_value("view_nums", j_data["TotalView"])
         item_loader.add_value("comment_nums", j_data["CommentCount"])
@@ -156,5 +114,3 @@ class JobboleSpider(scrapy.Spider):
         article_item = item_loader.load_item()
 
         yield article_item
-
-        pass
