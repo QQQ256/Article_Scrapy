@@ -21,13 +21,13 @@ class JobboleSpider(scrapy.Spider):
         "COOKIES_ENABLE": True
     }
 
-    # 模拟登陆
+    # Simulate login
     def start_requests(self):
 
         import undetected_chromedriver as uc
 
         browser = uc.Chrome()
-        # cnBlog的登陆link
+        # cnBlog's login link
         browser.get("https://account.cnblogs.com/signin")
         input("input enter to continue")
         cookies = browser.get_cookies()
@@ -36,19 +36,18 @@ class JobboleSpider(scrapy.Spider):
             cookie_dict[cookie['name']] = cookie['value']
 
         for url in self.start_urls:
-            # 将 cookie 直接给scrapy，后续的请求会沿用之前请求的cookie嘛？不会，scrapy会关了
+            # Give the cookie directly to scrapy,
+            # will subsequent requests use the previously requested cookie? No, scrapy will be closed
             headers = {
                 'User-Agent': 'Mozilla/4.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
             }
             yield scrapy.Request(url, cookies=cookie_dict, headers=headers, dont_filter=True)
 
-    # parse的功能，下载列表页面中的url并进行解析 + 获取下一页的url并交给scrapy进行下载
-    # 所以parse是用来写解析策略的
-
+    # pase is use for writing parsing strategies
     def parse(self, response):
         """
-        1. 获取新闻列表内的新闻url，交给scrapy下载并调用解析方法
-        2. 获取下一页的url并交给scrapy进行下载；下载完成后交给parse继续跟进
+        1. get urls from the news list, put urls to scrapy request to download and use callback methods
+        2. get urls from the next page and give it to scrapy to download; after downloaded, call parse to continue
         """
 
         post_nodes = response.css('#news_list .news_block')
@@ -62,10 +61,10 @@ class JobboleSpider(scrapy.Spider):
                                  callback=self.parse_detail)
             # break
 
-        # # 提取下一页并交给scrapy下载
-        # # 先拿切换页面的div中最后的那个值，判断是不是next，会出现到最后页next消失的情况，需要做特判
+        # Extract the next page and hand it to scrapy to download
         # next_url = response.css('div.pager a:last-child::text').extract_first("")
-        # # 或直接使用下面这行的xpath的方法，比css选择器更简单
+        # # xpath or css extractor
+
         # # next_url = response.xpath("//a[contains(text(), 'Next >')/@href]")
         # if next_url == "Next >":
         #     next_url = response.css('div.pager a:last-child::attr(href)').extract_first("")
@@ -73,17 +72,18 @@ class JobboleSpider(scrapy.Spider):
 
     def parse_detail(self, response):
 
-        # 之后值的内容无法从html端获取，它们是通过js代码获取的，或是通过GET从服务器端拿的
-        # 由于拿过来的值是JSON的格式，可以用requests包中的代码来解码JSON，拿需要的值（前提是找到了对应的GET link）
-        # 获取url最后面的id，也就是每个详细网页的ID
-        # 使用正则表达式
+        # The content of the value cannot be obtained from the html side, they are obtained through js code,
+        # or from the server through GET Since the value taken is in JSON format, you can use the code in the
+        # requests package to decode JSON and get the required value (provided that the corresponding GET link is
+        # found) Get the id at the end of the url, which is the ID of each detailed page use regular expressions
         match_re = re.match(".*?(\d+)", response.url)
-        # 完善逻辑缜密性，必须是有匹配到最后面的id，才去爬html中的内容
+        # To improve the meticulousness of logic,
+        # there must be an id that matches to the end before crawling the content in html
         if match_re:
             post_id = match_re.group(1)
 
             item_loader = ArticleItemLoader(item=JobBoleArticleItem(), response=response)
-            # 解释：title是通过哪个css提取出来的？
+
             item_loader.add_css("title", "#news_title a::text")
             item_loader.add_css("content", "#news_content")
             item_loader.add_css("tags", ".news_tag a::text")
@@ -102,7 +102,6 @@ class JobboleSpider(scrapy.Spider):
 
     @staticmethod
     def parse_nums(response):
-        # 两层回调
         j_data = json.loads(response.text)
 
         item_loader = response.meta.get("article_item", "")

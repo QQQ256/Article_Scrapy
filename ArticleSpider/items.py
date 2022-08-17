@@ -31,12 +31,12 @@ def date_convert(value):  # value 自动传递进来
 class JobBoleArticleItem(scrapy.Item):
     title = scrapy.Field()
     created_date = scrapy.Field(
-        input_processor=MapCompose(date_convert)  # 做正则表达式的提取，直接用就完了
+        input_processor=MapCompose(date_convert)  # 做正则表达式的提取
     )
     url = scrapy.Field()
     url_object_id = scrapy.Field()
     front_image_url = scrapy.Field(
-        output_processor=Identity()  # output为takeFirst会将所有的值段变成str，然鹅img要下载，必须是保持之前的url状态，所以这里将output设置为Identity()保持不变
+        output_processor=Identity()  # output为takeFirst会将所有的值段变成str，然鹅img要下载，必须是保持之前的url状态，这里将output设置为Identity()保持不变
     )
     front_image_path = scrapy.Field()
     praise_nums = scrapy.Field()

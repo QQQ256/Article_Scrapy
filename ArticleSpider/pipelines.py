@@ -85,6 +85,7 @@ class MysqlTwistedPipeline(object):
 
     # 参数cursor自动注入
     def do_insert(self, cursor, item):
+        # solve the primary key conflict problem with ON DUPLICATE KEY UPDATE
         insert_sql = """
                    insert into jobbole_article(title, url, url_object_id, front_image_path, front_image_url, praise_nums, comment_nums, fav_nums, tags,
                    content, create_date)
@@ -94,7 +95,7 @@ class MysqlTwistedPipeline(object):
         params.append(item.get("title", ""))
         params.append(item.get("url", ""))
         params.append(item.get("url_object_id", ""))
-        front_image_list = ",".join(item.get("front_image_path", []))
+        front_image_list = ",".join(item.get("front_image_path", []))  # there's no way to save list to MySQL, so we convert it with ','
         params.append(front_image_list)
         params.append(item.get("front_image_url", ""))
         params.append(item.get("praise_nums", 0))
