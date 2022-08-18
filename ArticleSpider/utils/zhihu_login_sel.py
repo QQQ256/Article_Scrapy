@@ -67,7 +67,8 @@ class Code():
         '''
         # 获取滑动前页面的url网址
         start_url = driver.current_url
-        print('滑动距离是: ', distance)
+
+
         # 根据滑动的距离生成滑动轨迹
         locus = self.get_slide_locus(distance)
 
@@ -114,92 +115,6 @@ class Code():
             with open(filename, 'wb') as f:
                 f.write(response.content)
 
-    def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
-        '''
-        根据传入滑块， 和背景的节点， 计算滑块的距离
-        :param slider_ele: 滑块节点参数
-        :param background_ele:  背景图的节点
-        :param correct:
-        :return:
-        '''
-        # 获取验证码的图片
-        slider_url = slider_ele.get_attribute('src')
-        background_url = background_ele.get_attribute('src')
-
-        # 下载验证码链接
-        slider = 'slider.jpg'
-        background = 'background.jpg'
-
-        self.onload_save_img(slider_url, slider)
-
-        self.onload_save_img(background_url, background)
-
-        # 进行色度图片, 转化为numpy 中的数组类型数据
-        slider_pic = cv2.imread(slider, 0)
-        background_pic = cv2.imread(background, 0)
-
-        # 获取缺口数组的形状
-        width, height = slider_pic.shape[::-1]
-
-        # 将处理之后的图片另存
-        slider01 = 'slider01.jpg'
-        slider02 = 'slider02.jpg'
-        background01 = 'background01.jpg'
-
-        cv2.imwrite(slider01, slider_pic)
-        cv2.imwrite(background01, background_pic)
-
-        # 读取另存的滑块
-        slider_pic = cv2.imread(slider01)
-
-        # 进行色彩转化
-        slider_pic = cv2.cvtColor(slider_pic, cv2.COLOR_BGR2GRAY)
-
-        # 获取色差的绝对值
-        slider_pic = abs(255 - slider_pic)
-        # 保存图片
-        cv2.imwrite(slider02, slider_pic)
-        # 读取滑块
-        slider_pic = cv2.imread(slider02)
-
-        # 读取背景图
-        background_pic = cv2.imread(background01)
-
-        # 展示图片
-        # cv2.imshow('gray1', slider_pic)  # gray1，gray2是窗口名称
-        # cv2.imshow('gray2', background_pic)
-        #
-        # # 释放资源
-        # cv2.waitKey(0)  # 按任意键退出图片展示
-        # cv2.destroyAllWindows()
-        time.sleep(3)
-
-        # 必脚两张图的重叠部分
-        result = cv2.matchTemplate(slider_pic, background_pic, cv2.TM_CCOEFF_NORMED)
-
-        # 通过数组运算，获取图片缺口位置
-        top, left = np.unravel_index(result.argmax(), result.shape)
-
-        # 背景图缺口坐标
-        print('当前滑块缺口位置', (left, top, left + width, top + height))
-
-        # 判读是否需求保存识别过程中的截图文件
-        if self.save_images:
-            loc = [(left + correct, top + correct), (left + width - correct, top + height - correct)]
-            self.image_crop(background, loc)
-
-        else:
-            # 删除临时文件
-            os.remove(slider01)
-            os.remove(slider02)
-            os.remove(background01)
-            os.remove(background)
-            os.remove(slider)
-            # print('删除')
-            # os.remove(slider)
-        # 返回需要移动的位置距离
-        return left
-
     def image_crop(self, image, loc):
         cv2.rectangle(image, loc[0], loc[1], (7, 249, 151), 2)
         cv2.imshow('Show', image)
@@ -231,7 +146,6 @@ class Login(object):
     def login(self):
         # 请求网址，登陆操作
         self.browser.get(self.url)
-
         login_element = self.browser.find_element(By.XPATH,
                                                   '//*[@id="root"]/div/main/div/div/div/div/div[2]/div/div[1]/div/div[1]/form/div[1]/div[2]')
 
@@ -262,24 +176,25 @@ class Login(object):
         k = 1
         # while True:
         while k < self.retry:
-            # 获取滑动前页面的url网址
-            # 1. 获取原图
+            # 获取图片并进行下载
             bg_img = self.wait.until(
                 Ec.presence_of_element_located((By.CSS_SELECTOR, '.yidun_bgimg .yidun_bg-img'))
             )
-            # 获取滑块链接
-            # front_img = self.wait.until(
-            #     Ec.presence_of_element_located(
-            #         (By.CSS_SELECTOR, "#cdn2")))
-            front_img = self.wait.until(
-                Ec.presence_of_element_located((By.CSS_SELECTOR, '.yidun_bgimg .yidun_jigsaw'))
-            )
+
+            background_url = bg_img.get_attribute('src')
+            background = "background.jpg"
+            # download the pic
+            time.sleep(3)
+            self.sli.onload_save_img(background_url, background)
 
             # 获取验证码滑动距离
-            distance = self.sli.get_element_slide_distance(front_img, bg_img)
+            baidu = BaiduLogin("RO00QIMixnXaGmpxgzrrKv3H", "z7Rzjo3iPungqlvGXNS4jZoCNj0KTUsx")
+            # distance从API返回，可能返回时间较长，需要等待一
+            distance = baidu.recognize(baidu.get_access_token(), background)
             print('滑动距离是', distance)
 
-            # 2. 乘缩放比例， -去  滑块前面的距离  下面给介绍
+            time.sleep(2)
+            # 初始位置在左边靠右一点
             distance = distance - 4
             print('实际滑动距离是', distance)
 
@@ -334,8 +249,103 @@ class Login(object):
         print('界面关闭')
         # self.display.stop()
 
+class BaiduLogin():
+
+    def __init__(self, ak, sk):
+        """
+        :param ak: API kEY
+        :param sk: SECRET KEY
+        """
+        self.ak = ak
+        self.sk = sk
+
+    def get_access_token(self):
+        # encoding:utf-8
+        import requests
+
+        # client_id 为官网获取的AK， client_secret 为官网获取的SK
+        host = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=RO00QIMixnXaGmpxgzrrKv3H&client_secret=z7Rzjo3iPungqlvGXNS4jZoCNj0KTUsx'\
+                .format(self.ak, self.sk)
+        response = requests.get(host)
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        return None
+
+    def recognize(self, access_token, image_file):
+        """
+        EasyDL 物体检测 调用模型公有云API Python3实现
+        """
+
+        import json
+        import base64
+        import requests
+        """
+        使用 requests 库发送请求
+        使用 pip（或者 pip3）检查我的 python3 环境是否安装了该库，执行命令
+          pip freeze | grep requests
+        若返回值为空，则安装该库
+          pip install requests
+        """
+        # download the pic and give it to API
+
+        # 获取滑动前页面的url网址
+        # 1. 获取原图
+
+
+        # 目标图片的 本地文件路径，支持jpg/png/bmp格式
+        IMAGE_FILEPATH = image_file
+
+        # 可选的请求参数
+        # threshold: 默认值为建议阈值，请在 我的模型-模型效果-完整评估结果-详细评估 查看建议阈值
+        PARAMS = {"threshold": 0.3}
+
+        # 服务详情 中的 接口地址
+        MODEL_API_URL = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/detection/zh_slide"
+
+        # 调用 API 需要 ACCESS_TOKEN。若已有 ACCESS_TOKEN 则于下方填入该字符串
+        # 否则，留空 ACCESS_TOKEN，于下方填入 该模型部署的 API_KEY 以及 SECRET_KEY，会自动申请并显示新 ACCESS_TOKEN
+        ACCESS_TOKEN = access_token
+        API_KEY = "RO00QIMixnXaGmpxgzrrKv3H"
+        SECRET_KEY = "z7Rzjo3iPungqlvGXNS4jZoCNj0KTUsx"
+
+        print("1. 读取目标图片 '{}'".format(IMAGE_FILEPATH))
+        with open(IMAGE_FILEPATH, 'rb') as f:
+            base64_data = base64.b64encode(f.read())
+            base64_str = base64_data.decode('UTF8')
+        print("将 BASE64 编码后图片的字符串填入 PARAMS 的 'image' 字段")
+        PARAMS["image"] = base64_str
+
+        if not ACCESS_TOKEN:
+            print("2. ACCESS_TOKEN 为空，调用鉴权接口获取TOKEN")
+            auth_url = "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials" \
+                       "&client_id={}&client_secret={}".format(API_KEY, SECRET_KEY)
+            auth_resp = requests.get(auth_url)
+            auth_resp_json = auth_resp.json()
+            ACCESS_TOKEN = auth_resp_json["access_token"]
+            print("新 ACCESS_TOKEN: {}".format(ACCESS_TOKEN))
+        else:
+            print("2. 使用已有 ACCESS_TOKEN")
+
+        print("3. 向模型接口 'MODEL_API_URL' 发送请求")
+        request_url = "{}?access_token={}".format(MODEL_API_URL, ACCESS_TOKEN)
+        response = requests.post(url=request_url, json=PARAMS)
+        response_json = response.json()
+        response_str = json.dumps(response_json, indent=4, ensure_ascii=False)
+        # 坑：response_json不能代替response.json()来获取其中的字典值
+        if "results" not in response_json:
+            return None
+        if len(response.json()["results"]) == 0:
+            return None
+        if "location" not in response.json()["results"][0]:
+            return None
+        # print("结果:\n{}".format(response_str))
+        return response.json()["results"][0]["location"]["left"]
+
 
 if __name__ == "__main__":
     # opencv识别验证码可能失败，机器学习识别概率高 6表示重试次数
     l = Login("18961275110", "86355573_aA", 6)
     l.login()
+
+    # baidu = BaiduLogin("RO00QIMixnXaGmpxgzrrKv3H", "z7Rzjo3iPungqlvGXNS4jZoCNj0KTUsx")
+    # print(baidu.recognize(baidu.get_access_token()))
