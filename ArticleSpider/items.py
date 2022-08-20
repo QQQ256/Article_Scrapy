@@ -28,6 +28,7 @@ def date_convert(value):  # value 自动传递进来
     else:
         return "1900-00-00"
 
+
 class JobBoleArticleItem(scrapy.Item):
     title = scrapy.Field()
     created_date = scrapy.Field(
@@ -46,3 +47,30 @@ class JobBoleArticleItem(scrapy.Item):
         output_processor=Join(separator=",")  # tags是list，用，隔开
     )
     content = scrapy.Field()
+
+
+class ZhihuQuestionItem(scrapy.Item):
+    # ItemLoader for question item
+    zhihu_id = scrapy.Field()
+    topics = scrapy.Field()
+    url = scrapy.Field()
+    title = scrapy.Field()
+    content = scrapy.Field()
+    answer_num = scrapy.Field()
+    comments_num = scrapy.Field()
+    watch_user_num = scrapy.Field()
+    click_num = scrapy.Field()
+    crawl_time = scrapy.Field()
+
+
+class ZhihuAnswerItem(scrapy.Item):
+    zhihu_id = scrapy.Field()
+    url = scrapy.Field()
+    question_id = scrapy.Field()
+    author_id = scrapy.Field()
+    content = scrapy.Field()
+    praise_num = scrapy.Field()
+    comments_num = scrapy.Field()
+    create_time = scrapy.Field()
+    update_time = scrapy.Field()
+    crawl_time = scrapy.Field()

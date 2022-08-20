@@ -107,3 +107,10 @@ class MysqlTwistedPipeline(object):
 
         cursor.execute(insert_sql, tuple(params))
         return item
+
+class ElasticsearchPipeline(object):
+    # write data to Elasticsearch
+    def process_item(self, item, spider):
+        pass
+        # convert item to es data type
+
